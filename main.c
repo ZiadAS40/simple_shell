@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 	(void)argc;
 	if (arg == NULL)
 	{
-		free(arg);
 		exit(EXIT_FAILURE);
 	}
 	while (1)
@@ -68,16 +67,24 @@ ssize_t handleRead(char **line, char ***arg)
 	int i = 0;
 
 	read = getline(line, &n, stdin);
+
 	if (read > 0 && (*line)[read - 1] == '\n')
 		(*line)[read - 1] = '\0';
+
 	token = strtok((*line), " ");
 	while (token != NULL && i < 31)
 	{
 		(*arg)[i++] = token;
 		token = strtok(NULL, " ");
 	}
+
+	if (strcmp((*arg)[0], "exit") == 0)
+	{
+		return (-1);
+	}
 	(*arg)[i] = NULL;
 	handlePath(arg);
+
 	if (read == -1)
 	{
 		free(*line);
@@ -138,6 +145,7 @@ void handlePath(char ***arg)
 		{
 			if (fullPath[1] == 117)
 				goto breaking_point;
+			free((*arg)[0]);
 			(*arg)[0] = malloc(sizeof(char) * 1024);
 			strcpy((*arg)[0], fullPath);
 			free(fullPath);
