@@ -11,5 +11,5 @@ extern char **environ;
 
 int handleChild(char *line,char **arg, char **argv);
 ssize_t handleRead(char **line, char ***arg);
-void fillNull(char ***arg);
+void handlePath(char ***arg);
 #endif

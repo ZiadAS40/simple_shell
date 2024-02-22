@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	char **arg = malloc(sizeof(char *) * 32);
 	__pid_t child_pid;
 	ssize_t read;
-	int r;
+	int r, i = 0;
 
 	(void)argc;
 	if (arg == NULL)
@@ -26,6 +26,8 @@ int main(int argc, char *argv[])
 	}
 	while (1)
 	{
+		for (i = 0; i < 32; i++)
+			arg[i] = NULL;
 		printf("#cisfun$ ");
 		read = handleRead(&line, &arg);
 		if (read == -1)
@@ -45,6 +47,7 @@ int main(int argc, char *argv[])
 			wait(NULL);
 	}
 	free(line);
+	free(arg[0]);
 	return (0);
 }
 /**
@@ -74,6 +77,7 @@ ssize_t handleRead(char **line, char ***arg)
 		token = strtok(NULL, " ");
 	}
 	(*arg)[i] = NULL;
+	handlePath(arg);
 	if (read == -1)
 	{
 		free(*line);
@@ -102,4 +106,46 @@ int handleChild(char *line, char **arg, char **argv)
 		return (0);
 	}
 	return (1);
+}
+/**
+ * handlePath - handle the command if have no path
+ * @arg: pointer to arg(the plain).
+ */
+void handlePath(char ***arg)
+{
+	char *path = getenv("PATH");
+	char *fullPath = malloc(sizeof(char) * 1024);
+	char *token;
+	char *cpyPath = malloc(sizeof(char) * strlen(path) + 1);
+
+	if (fullPath == NULL)
+	{
+		free(fullPath);
+		return;
+	}
+	if (cpyPath == NULL)
+	{
+		free(cpyPath);
+		return;
+	}
+	strcpy(cpyPath, path);
+	token = strtok(cpyPath, ":");
+	while (token != NULL)
+	{
+		sprintf(fullPath, "%s/%s", token, (*arg)[0]);
+
+		if (access(fullPath, X_OK) == 0)
+		{
+			if (fullPath[1] == 117)
+				goto breaking_point;
+			(*arg)[0] = malloc(sizeof(char) * 1024);
+			strcpy((*arg)[0], fullPath);
+			free(fullPath);
+			return;
+		}
+breaking_point:
+		token = strtok(NULL, ":");
+	}
+	free(fullPath);
+	free(cpyPath);
 }
