@@ -27,23 +27,25 @@ int main(int argc, char *argv[])
 	{
 		for (i = 0; i < 32; i++)
 			arg[i] = NULL;
-		printf("#cisfun$ ");
 		read = handleRead(&line, &arg);
 		if (read == -1)
 			exit(EXIT_SUCCESS);
+		if (read == 0)
+			return (0);
 		child_pid = fork();
-		if (child_pid == -1 || read == -2)
+		if (child_pid == -1)
 			exit(EXIT_FAILURE);
+
 		if (child_pid == 0)
 		{
 			r = handleChild(line, arg, argv);
 			if (r == 0)
-			{
 				return (0);
-			}
 		}
 		else
+		{
 			wait(NULL);
+		}
 	}
 	free(line);
 	free(arg[0]);
@@ -66,25 +68,27 @@ ssize_t handleRead(char **line, char ***arg)
 	char *token;
 	int i = 0;
 
-	read = getline(line, &n, stdin);
+	read = _getline(line, &n, stdin);
 
 	if (read > 0 && (*line)[read - 1] == '\n')
 		(*line)[read - 1] = '\0';
 
 	if ((**line > 1))
 	{
-	token = strtok((*line), " ");
-	while (token != NULL && i < 31)
-	{
-		(*arg)[i++] = token;
-		token = strtok(NULL, " ");
-	}
-	if (strcmp((*arg)[0], "exit") == 0)
-		return (-1);
-	if (strcmp((*arg)[0], "env") == 0)
-	printEnviron();
-	(*arg)[i] = NULL;
-	handlePath(arg);
+		token = _strtok((*line), ' ');
+		while (token != NULL && i < 31)
+		{
+			(*arg)[i++] = token;
+			token = _strtok(NULL, ' ');
+		}
+		if (strcmp((*arg)[0], "exit") == 0)
+			return (-1);
+		if (strcmp((*arg)[0], "env") == 0 && (*arg)[1] == NULL)
+		{
+			printEnviron();
+		}
+		(*arg)[i] = NULL;
+		handlePath(arg);
 	}
 
 	if (read == -1)
@@ -138,7 +142,7 @@ void handlePath(char ***arg)
 		return;
 	}
 	strcpy(cpyPath, path);
-	token = strtok(cpyPath, ":");
+	token = _strtok(cpyPath, ':');
 	while (token != NULL)
 	{
 		sprintf(fullPath, "%s/%s", token, (*arg)[0]);
@@ -153,19 +157,20 @@ void handlePath(char ***arg)
 			return;
 		}
 breaking_point:
-		token = strtok(NULL, ":");
+		token = _strtok(NULL, ':');
 	}
 	free(fullPath);
 	free(cpyPath);
 }
 /**
  * printEnviron - print the current environment.
-*/
+ */
 void printEnviron(void)
 {
 	int i;
 
 	for (i = 0; environ[i] != NULL; i++)
-	printf("%s\n", environ[i]);
-	printf("\n");
+	{
+		printf("%s\n", environ[i]);
+	}
 }
