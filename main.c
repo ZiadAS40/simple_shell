@@ -68,7 +68,7 @@ ssize_t handleRead(char **line, char ***arg)
 	char *token;
 	int i = 0;
 
-	read = _getline(line, &n, stdin);
+	read = getline(line, &n, stdin);
 
 	if (read > 0 && (*line)[read - 1] == '\n')
 		(*line)[read - 1] = '\0';
