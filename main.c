@@ -27,11 +27,12 @@ int main(int argc, char *argv[])
 	{
 		for (i = 0; i < 32; i++)
 			arg[i] = NULL;
+		write(STDOUT_FILENO, "$ ", 2);
 		read = handleRead(&line, &arg);
 		if (read == -1)
 			exit(EXIT_SUCCESS);
 		if (read == 0)
-			return (0);
+		continue;
 		child_pid = fork();
 		if (child_pid == -1)
 			exit(EXIT_FAILURE);
@@ -68,7 +69,7 @@ ssize_t handleRead(char **line, char ***arg)
 	char *token;
 	int i = 0;
 
-	read = getline(line, &n, stdin);
+	read = _getline(line, &n, stdin);
 
 	if (read > 0 && (*line)[read - 1] == '\n')
 		(*line)[read - 1] = '\0';
@@ -86,6 +87,7 @@ ssize_t handleRead(char **line, char ***arg)
 		if (strcmp((*arg)[0], "env") == 0 && (*arg)[1] == NULL)
 		{
 			printEnviron();
+			return (0);
 		}
 		(*arg)[i] = NULL;
 		handlePath(arg);
