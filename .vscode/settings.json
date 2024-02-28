@@ -61,6 +61,7 @@
     "wait.h": "c",
     "stdlib.h": "c",
     "unistd.h": "c",
-    "main.h": "c"
+    "main.h": "c",
+    "system_error": "c"
   }
 }

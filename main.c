@@ -1,5 +1,6 @@
 #include "main.h"
 
+void handleExit(char ***arg);
 /**
  * main - the main function for the simple shell project
  * the reason for dividing the function to small ones is
@@ -9,7 +10,6 @@
  *
  * Return: always 0.
  */
-
 int main(int argc, char *argv[])
 {
 	char *line = NULL;
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 		if (read == -1)
 			exit(EXIT_SUCCESS);
 		if (read == 0)
-		continue;
+			continue;
 		child_pid = fork();
 		if (child_pid == -1)
 			exit(EXIT_FAILURE);
@@ -42,6 +42,11 @@ int main(int argc, char *argv[])
 			r = handleChild(line, arg, argv);
 			if (r == 0)
 				return (0);
+			while (*arg != NULL)
+			{
+				*arg = NULL;
+				arg++;
+			}
 		}
 		else
 		{
@@ -77,13 +82,16 @@ ssize_t handleRead(char **line, char ***arg)
 	if ((**line > 1))
 	{
 		token = _strtok((*line), ' ');
+
 		while (token != NULL && i < 31)
 		{
 			(*arg)[i++] = token;
 			token = _strtok(NULL, ' ');
 		}
 		if (strcmp((*arg)[0], "exit") == 0)
-			return (-1);
+		{
+			handleExit(arg);
+		}
 		if (strcmp((*arg)[0], "env") == 0 && (*arg)[1] == NULL)
 		{
 			printEnviron();
