@@ -15,8 +15,9 @@ int main(int argc, char *argv[])
 	char *line = NULL;
 	char **arg = malloc(sizeof(char *) * 32);
 	__pid_t child_pid;
-	ssize_t read;
-	int r, i = 0;
+	ssize_t read = 0;
+	size_t len = 0;
+	int r;
 
 	(void)argc;
 	if (arg == NULL)
@@ -25,37 +26,52 @@ int main(int argc, char *argv[])
 	}
 	while (1)
 	{
-		for (i = 0; i < 32; i++)
-			arg[i] = NULL;
-		write(STDOUT_FILENO, "$ ", 2);
-		read = handleRead(&line, &arg);
+		read = getline(&line, &len, stdin);
 		if (read == -1)
+		{
+			if (isatty(STDIN_FILENO))
+			{
+				write(STDOUT_FILENO, "\n", 1);
+			}
 			exit(EXIT_SUCCESS);
+		}
+		if (*line == '\n')
+		{
+			line = NULL;
+			continue;
+		}
+		if (read > 0 && line[read - 1] == '\n')
+			line[read - 1] = '\0';
+		read = handleRead(line, &arg);
 		if (read == 0)
 			continue;
 		child_pid = fork();
 		if (child_pid == -1)
 			exit(EXIT_FAILURE);
-
 		if (child_pid == 0)
 		{
-			r = handleChild(line, arg, argv);
-			if (r == 0)
-				return (0);
-			while (*arg != NULL)
-			{
-				*arg = NULL;
-				arg++;
-			}
+			r = handleChild(&line, &arg, &argv);
+			if (r == -1)
+				exit(EXIT_FAILURE);
 		}
 		else
 		{
 			wait(NULL);
 		}
 	}
-	free(line);
-	free(arg[0]);
 	return (0);
+}
+/**
+ * freeArr - freeing an array.
+ * @arg: a pointer to the array (array of strings).
+ */
+void freeArr(char ***arg)
+{
+	int i;
+
+	for (i = 0; (*arg)[i] != NULL; i++)
+		free((*arg)[i]);
+	free(*arg);
 }
 /**
  * handleRead - handle the getline process and tokenize
@@ -67,45 +83,31 @@ int main(int argc, char *argv[])
  * Return: -1 if fails
  * the number of read characters if success.
  */
-ssize_t handleRead(char **line, char ***arg)
+ssize_t handleRead(char *line, char ***arg)
 {
-	size_t n = 0;
-	ssize_t read;
+
 	char *token;
 	int i = 0;
 
-	read = _getline(line, &n, stdin);
+	token = strtok(line, " ");
 
-	if (read > 0 && (*line)[read - 1] == '\n')
-		(*line)[read - 1] = '\0';
-
-	if ((**line > 1))
+	while (token != NULL && i < 31)
 	{
-		token = _strtok((*line), ' ');
-
-		while (token != NULL && i < 31)
-		{
-			(*arg)[i++] = token;
-			token = _strtok(NULL, ' ');
-		}
-		if (strcmp((*arg)[0], "exit") == 0)
-		{
-			handleExit(arg);
-		}
-		if (strcmp((*arg)[0], "env") == 0 && (*arg)[1] == NULL)
-		{
-			printEnviron();
-			return (0);
-		}
-		(*arg)[i] = NULL;
-		handlePath(arg);
+		(*arg)[i++] = token;
+		token = strtok(NULL, " ");
 	}
 
-	if (read == -1)
+	if (strcmp((*arg)[0], "exit") == 0)
+		exit(EXIT_SUCCESS);
+	if (strcmp((*arg)[0], "env") == 0 && (*arg)[1] == NULL)
 	{
-		free(*line);
+		printEnviron();
+		return (0);
 	}
-	return (read);
+	(*arg)[i] = NULL;
+	handlePath(arg);
+
+	return (1);
 }
 /**
  * handleChild - handle the execve function and its error
@@ -116,17 +118,20 @@ ssize_t handleRead(char **line, char ***arg)
  * 0 if fails.
  */
 
-int handleChild(char *line, char **arg, char **argv)
+int handleChild(char **line, char ***arg, char ***argv)
 {
 	int r;
 
-	if (strlen(line) < 1)
+	if (strlen(*line) < 1)
+	{
 		return (0);
-	r = execve(arg[0], arg, environ);
+	}
+	r = execve((*arg)[0], (*arg), environ);
+	free((*arg)[0]);
 	if (r == -1)
 	{
-		printf("%s: No such file or directory\n", argv[0]);
-		return (0);
+		printf("%s: No such file or directory\n", (*argv)[0]);
+		return (-1);
 	}
 	return (1);
 }
@@ -141,18 +146,18 @@ void handlePath(char ***arg)
 	char *token;
 	char *cpyPath = malloc(sizeof(char) * strlen(path) + 1);
 
-	if (fullPath == NULL)
-	{
-		free(fullPath);
-		return;
-	}
-	if (cpyPath == NULL)
+	if (!fullPath)
 	{
 		free(cpyPath);
 		return;
 	}
+	if (!cpyPath)
+	{
+		free(fullPath);
+		return;
+	}
 	strcpy(cpyPath, path);
-	token = _strtok(cpyPath, ':');
+	token = strtok(cpyPath, ":");
 	while (token != NULL)
 	{
 		sprintf(fullPath, "%s/%s", token, (*arg)[0]);
@@ -161,13 +166,15 @@ void handlePath(char ***arg)
 		{
 			if (fullPath[1] == 117)
 				goto breaking_point;
-			(*arg)[0] = malloc(sizeof(char) * 1024);
+			(*arg)[0] = NULL;
+			(*arg)[0] = malloc(sizeof(char) * 60);
 			strcpy((*arg)[0], fullPath);
 			free(fullPath);
+			free(cpyPath);
 			return;
 		}
 breaking_point:
-		token = _strtok(NULL, ':');
+		token = strtok(NULL, ":");
 	}
 	free(fullPath);
 	free(cpyPath);

@@ -1,14 +1,12 @@
 #include "main.h"
 
 /**
- * _getline - work like the plain one.
- * @lineptr: a pointer to the line.
- * @len: a pointer to the length of the line.
- * @stream: a file stream pointer.
- * Return: the number of reader characters on Success
- * -1 if fails
+ * _getline - read a line from a file descriptor
+ * @lineptr: a pointer to the line to modify it
+ * @len: a pointer to the length of the line
+ * @stream: the file descriptor to read from
+ * Return: the number of bytes read, or -1 on error or end of file
  */
-
 ssize_t _getline(char **lineptr, size_t *len, FILE *stream)
 {
 	static ssize_t n;
@@ -54,9 +52,9 @@ ssize_t _getline(char **lineptr, size_t *len, FILE *stream)
 }
 
 /**
- * custom_realloc - just for saving some space for bttey :)
- * @buffer: the string that should realloc.
- * @buffer_size: a pointer to the buffer_size.
+ * custom_realloc - reallocates memory for a buffer
+ * @buffer: the string that should realloc
+ * @buffer_size: a pointer to the buffer_size
  */
 void custom_realloc(char **buffer, int *buffer_size)
 {
@@ -66,7 +64,8 @@ void custom_realloc(char **buffer, int *buffer_size)
 	temp_buffer = realloc(*buffer, (size_t)(*buffer_size));
 	if (temp_buffer == NULL)
 	{
-		free(temp_buffer);
+		free(*buffer);		/* free the original buffer if realloc fails */
+		perror("realloc");
 		exit(EXIT_FAILURE);
 	}
 	*buffer = temp_buffer;
