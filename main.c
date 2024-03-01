@@ -1,68 +1,76 @@
 #include "main.h"
 
-void handleExit(char ***arg);
+extern char **environ;
+
+void sig_handler(int sig);
+
 /**
- * main - the main function for the simple shell project
- * the reason for dividing the function to small ones is
- * to aviod betty error.
- * @argc: the number of arguements.
- * @argv: array of the arguements start with the file's name.
+ * sig_handler - Prints a new prompt upon a signal.
+ * @sig: The signal.
+ */
+void sig_handler(int sig)
+{
+	char *newprompt = "\n$ ";
+
+	(void)sig;
+	signal(SIGINT, sig_handler);
+	write(STDOUT_FILENO, newprompt, 3);
+}
+
+/**
+ * main - the main function for the simple shell project.
+ * @argc: the number of arguments.
+ * @argv: array of the arguments starting with the file's name.
  *
  * Return: always 0.
  */
 int main(int argc, char *argv[])
 {
 	char *line = NULL;
-	char **arg = malloc(sizeof(char) * 32);
+	char **arg;
 	__pid_t child_pid;
-	ssize_t read = 0;
+	ssize_t nread = 0;
 	size_t len = 0;
-	int r;
 
 	(void)argc;
-	if (arg == NULL)
-	{
-		exit(EXIT_FAILURE);
-	}
+	signal(SIGINT, sig_handler);
+
 	while (1)
 	{
-		read = getline(&line, &len, stdin);
-		if (read == -1)
+		write(STDOUT_FILENO, "$ ", 2);
+		nread = getline(&line, &len, stdin);
+		if (nread == -1)
 		{
 			if (isatty(STDIN_FILENO))
 			{
 				write(STDOUT_FILENO, "\n", 1);
 			}
-			exit(EXIT_SUCCESS);
+				break;
 		}
 		if (*line == '\n')
 		{
-			line = NULL;
 			continue;
 		}
-		if (read > 0 && line[read - 1] == '\n')
-			line[read - 1] = '\0';
-		read = handleRead(line, &arg);
-		if (read == 0)
+		if (nread > 0 && line[nread - 1] == '\n')
+			line[nread - 1] = '\0';
+		nread = handleRead(line, &arg);
+		if (nread == 0)
 			continue;
 		child_pid = fork();
 		if (child_pid == -1)
 			exit(EXIT_FAILURE);
 		if (child_pid == 0)
 		{
-			r = handleChild(&line, arg, &argv);
-			if (r == -1)
+			if (handleChild(&line, arg, &argv) == -1)
 				exit(EXIT_FAILURE);
 		}
 		else
-		{
 			wait(NULL);
-		}
-		freeArr(&arg);
-		arg = malloc(sizeof(char *) * 32);
 	}
+	free(line);
 	return (0);
 }
+
 /**
  * freeArr - freeing an array.
  * @arg: a pointer to the array (array of strings).
@@ -72,7 +80,11 @@ void freeArr(char ***arg)
 	int i;
 
 	for (i = 0; (*arg)[i] != NULL; i++)
-		free((*arg)[i]);
+	{
+		if ((*arg)[i])
+			free((*arg)[i]);
+		(*arg)[i] = NULL;
+	}
 	free(*arg);
 }
 /**
@@ -91,6 +103,9 @@ ssize_t handleRead(char *line, char ***arg)
 	char *token;
 	int i = 0;
 
+	(*arg) = malloc(sizeof(char *) * 32);
+	if (!(*arg))
+		freeArr(arg);
 	token = strtok(line, " ");
 
 	while (token != NULL && i < 31)
@@ -107,7 +122,8 @@ ssize_t handleRead(char *line, char ***arg)
 		printEnviron();
 		return (0);
 	}
-	handlePath(arg);
+	if ((*arg)[0][0] != '/' && (*arg)[0][0] != '.')
+		handlePath(arg);
 
 	return (1);
 }
@@ -128,7 +144,8 @@ int handleChild(char **line, char **arg, char ***argv)
 	{
 		return (0);
 	}
-	r = execve((arg)[0], (arg), environ);
+	if (arg[0] != NULL)
+		r = execve((arg)[0], (arg), environ);
 	if (r == -1)
 	{
 		printf("%s: No such file or directory\n", (*argv)[0]);
@@ -146,7 +163,6 @@ void handlePath(char ***arg)
 	char *fullPath = malloc(sizeof(char) * 1024);
 	char *token;
 	char *cpyPath = malloc(sizeof(char) * strlen(path) + 1);
-
 
 	if (!fullPath)
 	{
@@ -166,11 +182,8 @@ void handlePath(char ***arg)
 
 		if (access(fullPath, X_OK) == 0)
 		{
-			(*arg)[0] = NULL;
 			(*arg)[0] = strdup(fullPath);
-			free(fullPath);
-			free(cpyPath);
-			return;
+			break;
 		}
 		token = strtok(NULL, ":");
 	}

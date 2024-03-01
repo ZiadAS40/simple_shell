@@ -62,6 +62,7 @@
     "stdlib.h": "c",
     "unistd.h": "c",
     "main.h": "c",
-    "system_error": "c"
+    "system_error": "c",
+    "signal.h": "c"
   }
 }
