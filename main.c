@@ -13,7 +13,7 @@ void handleExit(char ***arg);
 int main(int argc, char *argv[])
 {
 	char *line = NULL;
-	char **arg = malloc(sizeof(char *) * 32);
+	char **arg = malloc(sizeof(char) * 32);
 	__pid_t child_pid;
 	ssize_t read = 0;
 	size_t len = 0;
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		if (child_pid == 0)
 		{
-			r = handleChild(&line, &arg, &argv);
+			r = handleChild(&line, arg, &argv);
 			if (r == -1)
 				exit(EXIT_FAILURE);
 		}
@@ -58,6 +58,8 @@ int main(int argc, char *argv[])
 		{
 			wait(NULL);
 		}
+		freeArr(&arg);
+		arg = malloc(sizeof(char *) * 32);
 	}
 	return (0);
 }
@@ -97,6 +99,7 @@ ssize_t handleRead(char *line, char ***arg)
 		token = strtok(NULL, " ");
 	}
 
+	(*arg)[i] = NULL;
 	if (strcmp((*arg)[0], "exit") == 0)
 		exit(EXIT_SUCCESS);
 	if (strcmp((*arg)[0], "env") == 0 && (*arg)[1] == NULL)
@@ -104,7 +107,6 @@ ssize_t handleRead(char *line, char ***arg)
 		printEnviron();
 		return (0);
 	}
-	(*arg)[i] = NULL;
 	handlePath(arg);
 
 	return (1);
@@ -118,7 +120,7 @@ ssize_t handleRead(char *line, char ***arg)
  * 0 if fails.
  */
 
-int handleChild(char **line, char ***arg, char ***argv)
+int handleChild(char **line, char **arg, char ***argv)
 {
 	int r;
 
@@ -126,8 +128,7 @@ int handleChild(char **line, char ***arg, char ***argv)
 	{
 		return (0);
 	}
-	r = execve((*arg)[0], (*arg), environ);
-	free((*arg)[0]);
+	r = execve((arg)[0], (arg), environ);
 	if (r == -1)
 	{
 		printf("%s: No such file or directory\n", (*argv)[0]);
@@ -145,6 +146,7 @@ void handlePath(char ***arg)
 	char *fullPath = malloc(sizeof(char) * 1024);
 	char *token;
 	char *cpyPath = malloc(sizeof(char) * strlen(path) + 1);
+
 
 	if (!fullPath)
 	{
@@ -164,16 +166,12 @@ void handlePath(char ***arg)
 
 		if (access(fullPath, X_OK) == 0)
 		{
-			if (fullPath[1] == 117)
-				goto breaking_point;
 			(*arg)[0] = NULL;
-			(*arg)[0] = malloc(sizeof(char) * 60);
-			strcpy((*arg)[0], fullPath);
+			(*arg)[0] = strdup(fullPath);
 			free(fullPath);
 			free(cpyPath);
 			return;
 		}
-breaking_point:
 		token = strtok(NULL, ":");
 	}
 	free(fullPath);
