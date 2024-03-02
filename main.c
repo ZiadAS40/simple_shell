@@ -30,7 +30,6 @@ void innerMain(char **argv)
 	while (st)
 	{
 		line = NULL;
-		printf("$ ");
 		read = getline(&line, &len, stdin);
 		if (read == -1)
 		{
