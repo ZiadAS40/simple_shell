@@ -35,7 +35,6 @@ void innerMain(char **argv)
 		{
 			if (feof(stdin))
 			{
-				printf("\n");
 				free(line);
 			}
 			else
