@@ -11,8 +11,19 @@
 
 extern char **environ;
 
+
+int handleXcution(char **args, char **argv);
+char **parser_func(char *line);
+void innerMain(char **argv);
+
+
+
+
+
+
+/* Old Mian.h 
 int handleChild(char **line, char **arg, char ***argv);
-ssize_t handleRead(char *line, char ***arg);
+ssize_t handleRead(char **line, char ***arg);
 void handlePath(char ***arg);
 ssize_t _getline(char **lineptr, size_t *len, FILE *stream);
 void printEnviron(void);
@@ -20,4 +31,7 @@ char *_strtok(char *line, char sep);
 void custom_realloc(char **buffer, int *buffer_size);
 void handleExit(char ***arg);
 void freeArr(char ***arg);
+*/
+
+
 #endif
