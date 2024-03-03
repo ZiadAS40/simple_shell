@@ -9,10 +9,9 @@
  */
 int main(int argc, char *argv[])
 {
-
 	(void)argc;
 	innerMain(argv);
-	return (0);
+	return (EXIT_SUCCESS);
 }
 /**
  * innerMain - the funciton that responsable for all in main function
@@ -26,16 +25,18 @@ void innerMain(char **argv)
 	char **args;
 	int st = 1, read = 0;
 	size_t len = 0;
+	char *temp_line;
 
 	while (st)
 	{
 		line = NULL;
 		read = getline(&line, &len, stdin);
+		temp_line = line;
 		if (read == -1)
 		{
 			if (feof(stdin))
 			{
-				free(line);
+				free(temp_line);
 			}
 			else
 			{
@@ -43,9 +44,28 @@ void innerMain(char **argv)
 			}
 			break;
 		}
+		while (*line == ' ')
+		{
+			line++;
+		}
+		if (*line == '\n')
+		{
+			if (line)
+			free(temp_line);
+			continue;;
+		}
+
 		args = parser_func(line);
+		if (args == NULL)
+		{
+			free(line);
+			break;
+		}
 		st = handleXcution(args, argv);
-		free(line);
+		free(temp_line);
 		free(args);
 	}
 }
+
+
+

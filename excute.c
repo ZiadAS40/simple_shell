@@ -27,7 +27,8 @@ int handleXcution(char **args, char **argv)
 	}
 	else
 	{
-		do {
+		do
+		{
 			waitpid(pid, &proc_status, WUNTRACED);
 		} while (!WIFEXITED(proc_status) && !WIFSIGNALED(proc_status));
 	}
