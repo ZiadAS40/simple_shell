@@ -13,7 +13,7 @@ extern char **environ;
 
 
 int handleXcution(char **args, char **argv);
-char **parser_func(char *line, char **argv);
+char **parser_func(char *line);
 void innerMain(char **argv);
 char *handlePath(char **arg);
 
