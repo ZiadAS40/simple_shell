@@ -1,5 +1,5 @@
 #include "main.h"
-
+void freeArr(char ***args);
 /**
  * main - the main function for the simple shell project.
  * @argc: the number of arguments.
@@ -51,11 +51,11 @@ void innerMain(char **argv)
 		if (*line == '\n')
 		{
 			if (line)
-			free(temp_line);
-			continue;;
+				free(temp_line);
+			continue;
 		}
 
-		args = parser_func(line);
+		args = parser_func(line, argv);
 		if (args == NULL)
 		{
 			free(line);
@@ -63,9 +63,42 @@ void innerMain(char **argv)
 		}
 		st = handleXcution(args, argv);
 		free(temp_line);
+		free(args[0]);
 		free(args);
 	}
 }
 
+/**
+ * handlePath - handle the command if have no path
+ * @arg: pointer to arg(the plain).
+ */
+char *handlePath(char **arg)
+{
+	char *path = getenv("PATH");
+	char *fullPath = malloc(sizeof(char) * 1024);
+	char *token;
+	char *cpyPath = malloc(sizeof(char) * strlen(path) + 1);
 
+	if (!cpyPath)
+		return (NULL);
 
+	strcpy(cpyPath, path);
+	token = strtok(cpyPath, ":");
+	while (token != NULL)
+	{
+		
+		if (!fullPath)
+			return (NULL);
+		sprintf(fullPath, "%s/%s", token, arg[0]);
+
+		if (access(fullPath, X_OK) == 0)
+		{
+			free(cpyPath);
+			return (fullPath);
+		}
+		token = strtok(NULL, ":");
+	}
+	free(cpyPath);
+	free(fullPath);
+	return (NULL);
+}
